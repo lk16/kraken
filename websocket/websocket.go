@@ -18,6 +18,7 @@ var errBinaryMessage = errors.New("unhandled binary message")
 type Client struct {
 	publicWs    *websocket.Conn
 	receiveChan chan interface{}
+	verbose     bool
 }
 
 func NewClient() (*Client, error) {
@@ -35,6 +36,10 @@ func NewClient() (*Client, error) {
 	return client, nil
 }
 
+func (client *Client) SetVerbose(verbose bool) {
+	client.verbose = verbose
+}
+
 func (client *Client) publicWsListener() {
 	for {
 		messageType, message, err := client.publicWs.ReadMessage()
@@ -43,6 +48,9 @@ func (client *Client) publicWsListener() {
 		}
 		switch messageType {
 		case websocket.TextMessage:
+			if client.verbose {
+				log.Printf("RECV: %s", string(message))
+			}
 			model, err := unmarshalReceivedMessage(message)
 			if err != nil {
 				client.receiveChan <- err
@@ -66,8 +74,10 @@ func (client *Client) Send(rawMessage interface{}) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("SEND: %s", string(bytes))
 
+		if client.verbose {
+			log.Printf("SEND: %s", string(bytes))
+		}
 		return client.publicWs.WriteJSON(rawMessage)
 	}
 

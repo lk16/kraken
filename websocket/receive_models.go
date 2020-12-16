@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 )
 
@@ -234,27 +233,45 @@ func (tickerFloatStats *TickerFloatStats) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
-	var event event
+func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
+	rawSlice, err := unmarshalArray(bytes, 4)
+	if err != nil {
+		return nil, err
+	}
 
-	log.Printf("RECV: %s", string(bytes))
+	kind, ok := rawSlice[2].(string)
+	if !ok {
+		return nil, fmt.Errorf("expected JSON string at offset 2")
+	}
 
-	if err := json.Unmarshal(bytes, &event); err != nil {
-		// message is not a JSON object
-		// we proceed to check JSON array models
-
+	if kind == "ticker" {
 		var ticker Ticker
+		var err error
 		if err = json.Unmarshal(bytes, &ticker); err == nil {
 			return &ticker, nil
 		}
 		return nil, err
 	}
 
+	return nil, fmt.Errorf("could not recognize JSON message with kind %s", kind)
+}
+
+func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
+
+	var event event
+
 	modelOrError := func(model interface{}, err error) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
 		}
 		return model, nil
+	}
+
+	if err := json.Unmarshal(bytes, &event); err != nil {
+		// This probably means the message is not a JSON object.
+		// All other kraken models are JSON arrays, so we try those.
+		// The case of broken JSON also ends up here.
+		return unmarshalArrayMessage(bytes)
 	}
 
 	switch event.Event {
