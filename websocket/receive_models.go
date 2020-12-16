@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 )
 
@@ -58,23 +59,23 @@ type SystemStatus struct {
 	Version      string      `json:"version"`
 }
 
-type SubscriptionStatusDetails struct {
-	Depth        int    `json:"depth"`
-	Interval     int    `json:"interval"`
-	MaxRateCount int    `json:"maxratecount"`
+type SubscriptionDetails struct {
+	Depth        int    `json:"depth,omitempty"`
+	Interval     int    `json:"interval,omitempty"`
+	MaxRateCount int    `json:"maxratecount,omitempty"`
 	Name         string `json:"name"`
-	Token        string `json:"token"`
+	Token        string `json:"token,omitempty"`
 }
 
 type SubscriptionStatus struct {
-	Event        string                    `json:"event"`
-	ChannelID    int                       `json:"channelID`
-	ChannelName  string                    `json:"channelName"`
-	ReqID        int                       `json:"reqid"`
-	Pair         string                    `json:"pair"`
-	Status       string                    `json:"status"`
-	Subscription SubscriptionStatusDetails `json:"subscription`
-	ErrorMessage string                    `json:"errorMessage"`
+	Event        string              `json:"event"`
+	ChannelID    int                 `json:"channelID"`
+	ChannelName  string              `json:"channelName"`
+	ReqID        int                 `json:"reqid"`
+	Pair         string              `json:"pair"`
+	Status       string              `json:"status"`
+	Subscription SubscriptionDetails `json:"subscription"`
+	ErrorMessage string              `json:"errorMessage"`
 }
 
 type Pong struct {
@@ -235,6 +236,8 @@ func (tickerFloatStats *TickerFloatStats) UnmarshalJSON(bytes []byte) error {
 
 func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
 	var event event
+
+	log.Printf("RECV: %s", string(bytes))
 
 	if err := json.Unmarshal(bytes, &event); err != nil {
 		// message is not a JSON object

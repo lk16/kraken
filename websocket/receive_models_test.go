@@ -48,7 +48,7 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 				Event:       "subscriptionStatus",
 				Pair:        "XBT/EUR",
 				Status:      "subscribed",
-				Subscription: SubscriptionStatusDetails{
+				Subscription: SubscriptionDetails{
 					Name: "ticker",
 				},
 			},
@@ -86,7 +86,6 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 
 			assert.Equal(t, testCase.expectedModel, model)
 			assert.Equal(t, testCase.expectedError, err)
-
 		})
 	}
 

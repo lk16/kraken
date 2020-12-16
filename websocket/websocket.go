@@ -1,7 +1,10 @@
 package websocket
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/gorilla/websocket"
 )
@@ -56,16 +59,30 @@ func (client *Client) Listen() <-chan interface{} {
 	return client.receiveChan
 }
 
-func (client *Client) send(message interface{}) error {
-	return client.publicWs.WriteJSON(message)
-}
+func (client *Client) Send(rawMessage interface{}) error {
 
-func (client *Client) SendPing(ping Ping) error {
-	ping.Event = "ping"
-	return client.send(ping)
-}
+	send := func(rawMessage interface{}) error {
+		bytes, err := json.Marshal(rawMessage)
+		if err != nil {
+			return err
+		}
+		log.Printf("SEND: %s", string(bytes))
 
-func (client *Client) SendSubscribe(subscribe Subscribe) error {
-	subscribe.Event = "subscribe"
-	return client.send(subscribe)
+		return client.publicWs.WriteJSON(rawMessage)
+	}
+
+	switch message := rawMessage.(type) {
+	case Ping:
+		message.Event = "ping"
+		return send(message)
+	case Subscribe:
+		message.Event = "subscribe"
+		return send(message)
+	case Unsubscribe:
+		message.Event = "unsubscribe"
+		return send(message)
+	default:
+		return fmt.Errorf("unsupported message type %T", message)
+	}
+
 }

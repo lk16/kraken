@@ -20,3 +20,10 @@ type Subscribe struct {
 	Pair         []string     `json:"pair"`
 	Subscription Subscription `json:"subscription"`
 }
+
+type Unsubscribe struct {
+	Event        string       `json:"event"`
+	ReqID        int          `json:"reqid"`
+	Pair         []string     `json:"pair"`
+	Subscription Subscription `json:"subscription"`
+}
