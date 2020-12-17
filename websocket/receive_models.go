@@ -416,44 +416,25 @@ type Book struct {
 	Data        BookData
 }
 
-type BookData struct {
-	Asks []PriceLevel
-	Bids []PriceLevel
+func (book *Book) Update(update BookUpdate) {
+	panic("not implemented")
 }
 
-func (bookData *BookData) UnmarshalJSON(bytes []byte) error {
-	// We can't have two JSOn tags for the same field
-	// so we do things the ugly way.
+type BookData struct {
+	Asks []PriceLevel `json:"as"`
+	Bids []PriceLevel `json:"bs"`
+}
 
-	type bookDataSnapshot struct {
-		Asks []PriceLevel `json:"as"`
-		Bids []PriceLevel `json:"bs"`
-	}
+type BookUpdate struct {
+	ChannelID   int64
+	ChannelName string
+	Pair        string
+	Data        BookUpdateData
+}
 
-	var snapshot bookDataSnapshot
-	if err := json.Unmarshal(bytes, &snapshot); err != nil {
-		// if object parsing failed, update won't work either
-		return err
-	}
-
-	if snapshot.Asks != nil || snapshot.Bids != nil {
-		bookData.Asks = snapshot.Asks
-		bookData.Bids = snapshot.Bids
-		return nil
-	}
-
-	type bookDataupdate struct {
-		Asks []PriceLevel `json:"a"`
-		Bids []PriceLevel `json:"b"`
-	}
-	var update bookDataupdate
-	if err := json.Unmarshal(bytes, &update); err != nil {
-		return err
-	}
-
-	bookData.Asks = update.Asks
-	bookData.Bids = update.Bids
-	return nil
+type BookUpdateData struct {
+	Asks []PriceLevel `json:"a"`
+	Bids []PriceLevel `json:"b"`
 }
 
 type PriceLevel struct {
@@ -463,7 +444,13 @@ type PriceLevel struct {
 }
 
 func (priceLevel *PriceLevel) UnmarshalJSON(bytes []byte) error {
-	rawSlice, err := unmarshalArray(bytes, 3)
+
+	var rawSlice []interface{}
+	err := json.Unmarshal(bytes, &rawSlice)
+
+	if len(rawSlice) != 3 && len(rawSlice) != 4 {
+		return errors.New("expected JSON array with length 3 or 4")
+	}
 
 	if err != nil {
 		return err
@@ -551,6 +538,19 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 		if err = json.Unmarshal(dataBytes, &book.Data); err != nil {
 			return nil, fmt.Errorf("parsing book data: %w", err)
 		}
+
+		if book.Data.Asks == nil {
+			bookUpdate := &BookUpdate{
+				ChannelID:   array.ChannelID,
+				ChannelName: array.ChannelName,
+				Pair:        array.Pair,
+			}
+			if err = json.Unmarshal(dataBytes, &bookUpdate.Data); err != nil {
+				return nil, fmt.Errorf("parsing book update data: %w", err)
+			}
+			return bookUpdate, nil
+		}
+
 		return book, nil
 	default:
 		return nil, fmt.Errorf("unknown channel name prefix %s", channelNamePrefix)

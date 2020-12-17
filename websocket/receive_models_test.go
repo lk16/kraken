@@ -166,11 +166,11 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 		{
 			name:  "bookPayload",
 			bytes: []byte(`[1234,{"a":[["5541.30000","2.50700000","1534614248.456738"]],"c":"974942666"},"book-10","XBT/USD"]`),
-			expectedModel: &Book{
+			expectedModel: &BookUpdate{
 				ChannelID:   1234,
 				ChannelName: "book-10",
 				Pair:        "XBT/USD",
-				Data: BookData{
+				Data: BookUpdateData{
 					Asks: []PriceLevel{
 						{
 							Price:     5541.3,
