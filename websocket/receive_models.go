@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -416,8 +418,67 @@ type Book struct {
 	Data        BookData
 }
 
+func (book *Book) Print() {
+	fmt.Printf("Asks:\n")
+	for _, ask := range book.Data.Asks {
+		fmt.Printf("%11.5f %11.5f\n", ask.Price, ask.Volume)
+	}
+
+	fmt.Printf("Bids:\n")
+	for _, bid := range book.Data.Bids {
+		fmt.Printf("%11.5f %11.5f\n", bid.Price, bid.Volume)
+	}
+}
+
+func updateSide(side []PriceLevel, updates []PriceLevel) []PriceLevel {
+	for _, update := range updates {
+		price := update.Price
+		removeLevel := update.Volume == 0.0
+
+		foundIndex := -1
+
+		for index, level := range side {
+			if level.Price == price {
+				foundIndex = index
+				break
+			}
+		}
+
+		if foundIndex != -1 {
+			if removeLevel {
+				// swap with last
+				side[len(side)-1], side[foundIndex] = side[foundIndex], side[len(side)-1]
+
+				// remove last item
+				side = side[:len(side)-1]
+
+			} else {
+				// update level
+				side[foundIndex] = update
+			}
+		} else {
+			if removeLevel {
+				log.Printf("WARNING: attempting to remove non-existent level")
+			} else {
+				// add level
+				side = append(side, update)
+			}
+		}
+	}
+	return side
+}
+
 func (book *Book) Update(update BookUpdate) {
-	panic("not implemented")
+	book.Data.Asks = updateSide(book.Data.Asks, update.Data.Asks)
+	book.Data.Bids = updateSide(book.Data.Bids, update.Data.Bids)
+
+	sort.Slice(book.Data.Asks, func(i, j int) bool {
+		return book.Data.Asks[i].Price < book.Data.Asks[j].Price
+	})
+
+	sort.Slice(book.Data.Bids, func(i, j int) bool {
+		return book.Data.Bids[i].Price > book.Data.Bids[j].Price
+	})
 }
 
 type BookData struct {
@@ -573,7 +634,15 @@ func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
 		// This probably means the message is not a JSON object.
 		// All other kraken models are JSON arrays, so we try those.
 		// The case of broken JSON also ends up here.
-		return unmarshalArrayMessage(bytes)
+		model, err := unmarshalArrayMessage(bytes)
+
+		if err != nil {
+			// TODO: remove
+			log.Printf("WARNING: error while parsing message %s", string(bytes))
+		}
+
+		return model, err
+
 	}
 
 	switch event.Event {
