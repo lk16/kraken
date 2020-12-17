@@ -135,6 +135,52 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 					AskVolume: 0.98765432,
 				},
 			},
+			expectedError: nil,
+		},
+		{
+			name:  "bookSnapshot",
+			bytes: []byte(`[0,{"as":[["5541.30000","2.50700000","1534614248.123678"]],"bs":[["5541.20000","1.52900000","1534614248.765567"]]},"book-100","XBT/USD"]`),
+			expectedModel: &Book{
+				ChannelID:   0,
+				ChannelName: "book-100",
+				Pair:        "XBT/USD",
+				Data: BookData{
+					Asks: []PriceLevel{
+						{
+							Price:     5541.3,
+							Volume:    2.507,
+							Timestamp: time.Unix(1534614248, 123677968),
+						},
+					},
+					Bids: []PriceLevel{
+						{
+							Price:     5541.2,
+							Volume:    1.529,
+							Timestamp: time.Unix(1534614248, 765567064),
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name:  "bookPayload",
+			bytes: []byte(`[1234,{"a":[["5541.30000","2.50700000","1534614248.456738"]],"c":"974942666"},"book-10","XBT/USD"]`),
+			expectedModel: &Book{
+				ChannelID:   1234,
+				ChannelName: "book-10",
+				Pair:        "XBT/USD",
+				Data: BookData{
+					Asks: []PriceLevel{
+						{
+							Price:     5541.3,
+							Volume:    2.507,
+							Timestamp: time.Unix(1534614248, 456737995),
+						},
+					},
+				},
+			},
+			expectedError: nil,
 		},
 	}
 

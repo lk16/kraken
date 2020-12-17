@@ -409,6 +409,84 @@ func (spreadData *SpreadData) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
+type Book struct {
+	ChannelID   int64
+	ChannelName string
+	Pair        string
+	Data        BookData
+}
+
+type BookData struct {
+	Asks []PriceLevel
+	Bids []PriceLevel
+}
+
+func (bookData *BookData) UnmarshalJSON(bytes []byte) error {
+	// We can't have two JSOn tags for the same field
+	// so we do things the ugly way.
+
+	type bookDataSnapshot struct {
+		Asks []PriceLevel `json:"as"`
+		Bids []PriceLevel `json:"bs"`
+	}
+
+	var snapshot bookDataSnapshot
+	if err := json.Unmarshal(bytes, &snapshot); err != nil {
+		// if object parsing failed, update won't work either
+		return err
+	}
+
+	if snapshot.Asks != nil || snapshot.Bids != nil {
+		bookData.Asks = snapshot.Asks
+		bookData.Bids = snapshot.Bids
+		return nil
+	}
+
+	type bookDataupdate struct {
+		Asks []PriceLevel `json:"a"`
+		Bids []PriceLevel `json:"b"`
+	}
+	var update bookDataupdate
+	if err := json.Unmarshal(bytes, &update); err != nil {
+		return err
+	}
+
+	bookData.Asks = update.Asks
+	bookData.Bids = update.Bids
+	return nil
+}
+
+type PriceLevel struct {
+	Price     float64
+	Volume    float64
+	Timestamp time.Time
+}
+
+func (priceLevel *PriceLevel) UnmarshalJSON(bytes []byte) error {
+	rawSlice, err := unmarshalArray(bytes, 3)
+
+	if err != nil {
+		return err
+	}
+
+	var timestamp float64
+
+	floatPointers := []*float64{&priceLevel.Price, &priceLevel.Volume, &timestamp}
+
+	for offset := range floatPointers {
+		var value float64
+		if value, err = unmarshalStringasFloat64(rawSlice[offset]); err != nil {
+			return fmt.Errorf("at offset %d: %w", offset, err)
+		}
+		*floatPointers[offset] = value
+	}
+
+	sec, dec := math.Modf(timestamp)
+	priceLevel.Timestamp = time.Unix(int64(sec), int64(dec*(1e9)))
+
+	return nil
+}
+
 func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 	var array arrayModel
 
@@ -464,6 +542,16 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 			return nil, fmt.Errorf("parsing spread data: %w", err)
 		}
 		return spread, nil
+	case "book":
+		book := &Book{
+			ChannelID:   array.ChannelID,
+			ChannelName: array.ChannelName,
+			Pair:        array.Pair,
+		}
+		if err = json.Unmarshal(dataBytes, &book.Data); err != nil {
+			return nil, fmt.Errorf("parsing book data: %w", err)
+		}
+		return book, nil
 	default:
 		return nil, fmt.Errorf("unknown channel name prefix %s", channelNamePrefix)
 	}
