@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -78,14 +79,71 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name:  "ohlc",
+			bytes: []byte(`[920,["1608207638.842716","1608207900.000000","0.46228000","0.46256000","0.46200000","0.46256000","0.46210203","86513.88714914",15],"ohlc-5","XBT/EUR"]`),
+			expectedModel: &OHLC{
+				ChannelID: 920,
+				Data: OHLCData{
+					Time:                time.Unix(1608207638, 842715978),
+					EndTime:             time.Unix(1608207900, 0),
+					Open:                0.46228,
+					High:                0.46256,
+					Low:                 0.462,
+					Close:               0.46256,
+					VolumeWeightedPrice: 0.46210203,
+					Volume:              86513.88714914,
+					Count:               15,
+				},
+				ChannelName: "ohlc-5",
+				Pair:        "XBT/EUR",
+			},
+			expectedError: nil,
+		},
+		{
+			name:  "trade",
+			bytes: []byte(`[0,[["5541.20000","0.15850568","1534614057.321597","s","l","foo"]],"trade","XBT/USD"]`),
+			expectedModel: &Trade{
+				ChannelID:   0,
+				ChannelName: "trade",
+				Pair:        "XBT/USD",
+				Data: []TradeData{
+					{
+						Price:     5541.2,
+						Volume:    0.15850568,
+						Time:      time.Unix(1534614057, 321597099),
+						Side:      "s",
+						OrderType: "l",
+						Misc:      "foo",
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name:  "spread",
+			bytes: []byte(`[0,["5698.40000","5700.00000","1542057299.545897","1.01234567","0.98765432"],"spread","XBT/USD"]`),
+			expectedModel: &Spread{
+				ChannelID:   0,
+				ChannelName: "spread",
+				Pair:        "XBT/USD",
+				Data: SpreadData{
+					Ask:       5698.4,
+					Bid:       5700,
+					Time:      time.Unix(1542057299, 545897006),
+					BidVolume: 1.01234567,
+					AskVolume: 0.98765432,
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			model, err := unmarshalReceivedMessage(testCase.bytes)
 
-			assert.Equal(t, testCase.expectedModel, model)
 			assert.Equal(t, testCase.expectedError, err)
+			assert.Equal(t, testCase.expectedModel, model)
 		})
 	}
 
