@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -38,75 +38,76 @@ func (client *Client) SetAuth(key string, secret string) error {
 	return err
 }
 
-func (client *Client) getSign(requestURL string, data url.Values) string {
-	sha := sha256.New()
+func (client *Client) sign(requestURL string, data url.Values) string {
+	// note: calling Write() on a hash object cannot fail, the returned error is always nil
 
-	sha.Write([]byte(data.Get("nonce") + data.Encode()))
+	sha256State := sha256.New()
+	sha256State.Write([]byte(data.Get("nonce")))
+	sha256State.Write([]byte(data.Encode()))
 
-	hashData := sha.Sum(nil)
-	hmacObj := hmac.New(sha512.New, client.decodedSecret)
+	hmacState := hmac.New(sha512.New, client.decodedSecret)
+	hmacState.Write([]byte(requestURL))
+	hmacState.Write(sha256State.Sum(nil))
 
-	hmacObj.Write(append([]byte(requestURL), hashData...))
-	hmacData := hmacObj.Sum(nil)
-
-	return base64.StdEncoding.EncodeToString(hmacData)
+	return base64.StdEncoding.EncodeToString(hmacState.Sum(nil))
 }
 
 func (client *Client) prepareRequest(method string, isPrivate bool, data url.Values) (*http.Request, error) {
+
 	if data == nil {
 		data = url.Values{}
 	}
-	requestURL := ""
+
 	if isPrivate {
-		requestURL = fmt.Sprintf("%s/%s/private/%s", APIUrl, APIVersion, method)
 		data.Set("nonce", fmt.Sprintf("%d", time.Now().UnixNano()))
-	} else {
-		requestURL = fmt.Sprintf("%s/%s/public/%s", APIUrl, APIVersion, method)
 	}
-	req, err := http.NewRequest("POST", requestURL, strings.NewReader(data.Encode()))
+
+	var publicOrPrivate string
+	if isPrivate {
+		publicOrPrivate = "private"
+	} else {
+		publicOrPrivate = "public"
+	}
+
+	urlPath := fmt.Sprintf("/%s/%s/%s", APIVersion, publicOrPrivate, method)
+
+	request, err := http.NewRequest("POST", APIUrl+urlPath, strings.NewReader(data.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("Error during request creation: %s", err.Error())
+		return nil, fmt.Errorf("could not create request: %w", err)
 	}
 
 	if isPrivate {
-		urlPath := fmt.Sprintf("/%s/private/%s", APIVersion, method)
-		req.Header.Add("API-Key", client.key)
-		signature := client.getSign(urlPath, data)
-		req.Header.Add("API-Sign", signature)
+		request.Header.Add("API-Key", client.key)
+		request.Header.Add("API-Sign", client.sign(urlPath, data))
 	}
-	return req, nil
+	return request, nil
 }
 
-/* TODO
-func (api *Kraken) parseResponse(response *http.Response, retType interface{}) error {
+func parseResponse(response *http.Response, retType interface{}) error {
 	if response.StatusCode != 200 {
-		return fmt.Errorf("Error during response parsing: invalid status code %d", response.StatusCode)
+		return fmt.Errorf("unexpected status code %d", response.StatusCode)
 	}
 
 	if response.Body == nil {
-		return fmt.Errorf("Error during response parsing: can not read response body")
+		return fmt.Errorf("response body is nil")
 	}
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return fmt.Errorf("Error during response parsing: can not read response body (%s)", err.Error())
+		return fmt.Errorf("cannot read response body (%s)", err.Error())
 	}
 
-	var retData KrakenResponse
+	var retData Response
 	if retType != nil {
 		retData.Result = retType
 	}
 
 	if err = json.Unmarshal(body, &retData); err != nil {
-		return fmt.Errorf("Error during response parsing: json marshalling (%s)", err.Error())
-	}
-
-	if len(retData.Error) > 0 {
-		return fmt.Errorf("Kraken return errors: %s", retData.Error)
+		return fmt.Errorf("parsing JSON body failed: %w", err)
 	}
 
 	return nil
-} */
+}
 
 func (client *Client) request(method string, isPrivate bool, data url.Values, retType interface{}) error {
 	req, err := client.prepareRequest(method, isPrivate, data)
@@ -118,16 +119,13 @@ func (client *Client) request(method string, isPrivate bool, data url.Values, re
 		return fmt.Errorf("Error during request execution: %s", err.Error())
 	}
 
-	bytes, _ := ioutil.ReadAll(resp.Body) // TODO remove
-	log.Printf("got: %s", string(bytes))  // TODO remove
-
 	defer resp.Body.Close()
-	return nil // TODO api.parseResponse(resp, retType)
+	return parseResponse(resp, retType)
 }
 
 // GetWebSocketsToken - WebSockets authentication
-func (client *Client) GetWebSocketsToken() (WebSocketTokenResponse, error) {
-	var response WebSocketTokenResponse
+func (client *Client) GetWebSocketsToken() (WebSocketToken, error) {
+	var response WebSocketToken
 
 	if err := client.request("GetWebSocketsToken", true, nil, &response); err != nil {
 		return response, err
