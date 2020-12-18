@@ -198,6 +198,17 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 					},
 				},
 			},
+			expectedError: nil,
+		},
+		{
+			name:  "error",
+			bytes: []byte(`{"errorMessage": "EOrder:Order minimum not met", "event": "addOrderStatus", "status": "error"}`),
+			expectedModel: &Error{
+				Message: "EOrder:Order minimum not met",
+				Event:   "addOrderStatus",
+				Status:  "error",
+			},
+			expectedError: nil,
 		},
 	}
 

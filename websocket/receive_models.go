@@ -53,7 +53,8 @@ func unmarshalStringasFloat64(value interface{}) (float64, error) {
 }
 
 type event struct {
-	Event string `json:"event"`
+	Event  string `json:"event"`
+	Status string `json:"status"`
 }
 
 type SystemStatus struct {
@@ -483,9 +484,7 @@ func updateSide(side []PriceLevel, updates []PriceLevel) []PriceLevel {
 				side[foundIndex] = update
 			}
 		} else {
-			if removeLevel {
-				log.Printf("WARNING: attempting to remove non-existent level")
-			} else {
+			if !removeLevel {
 				// add level
 				side = append(side, update)
 			}
@@ -570,7 +569,7 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 
 	dataBytes, err := json.Marshal(array.Data)
 	if err != nil {
-		return nil, fmt.Errorf("re-marshaling JSON at position 1: %w", err)
+		return nil, fmt.Errorf("re-marshaling JSON at offset 1: %w", err)
 	}
 
 	channelNamePrefix := strings.Split(array.ChannelName, "-")[0]
@@ -642,7 +641,12 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("unknown channel name prefix %s", channelNamePrefix)
 	}
+}
 
+type Error struct {
+	Message string `json:"errorMessage"`
+	Event   string `json:"event"`
+	Status  string `json:"status"`
 }
 
 func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
@@ -668,7 +672,11 @@ func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
 		}
 
 		return model, err
+	}
 
+	if event.Status == "error" {
+		var model Error
+		return modelOrError(&model, json.Unmarshal(bytes, &model))
 	}
 
 	switch event.Event {
