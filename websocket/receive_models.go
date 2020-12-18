@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"sort"
 	"strconv"
@@ -447,12 +446,18 @@ type Book struct {
 
 func (book *Book) Print() {
 	fmt.Printf("Asks:\n")
-	for _, ask := range book.Data.Asks {
+	for i, ask := range book.Data.Asks {
+		if i == 10 {
+			break
+		}
 		fmt.Printf("%11.5f %11.5f\n", ask.Price, ask.Volume)
 	}
 
 	fmt.Printf("Bids:\n")
-	for _, bid := range book.Data.Bids {
+	for i, bid := range book.Data.Bids {
+		if i == 10 {
+			break
+		}
 		fmt.Printf("%11.5f %11.5f\n", bid.Price, bid.Volume)
 	}
 }
@@ -576,7 +581,7 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 
 	switch channelNamePrefix {
 	case "ticker":
-		ticker := &Ticker{
+		ticker := Ticker{
 			ChannelID:   array.ChannelID,
 			ChannelName: array.ChannelName,
 			Pair:        array.Pair,
@@ -586,7 +591,7 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 		}
 		return ticker, nil
 	case "ohlc":
-		ohlc := &OHLC{
+		ohlc := OHLC{
 			ChannelID:   array.ChannelID,
 			ChannelName: array.ChannelName,
 			Pair:        array.Pair,
@@ -596,7 +601,7 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 		}
 		return ohlc, nil
 	case "trade":
-		trade := &Trade{
+		trade := Trade{
 			ChannelID:   array.ChannelID,
 			ChannelName: array.ChannelName,
 			Pair:        array.Pair,
@@ -606,7 +611,7 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 		}
 		return trade, nil
 	case "spread":
-		spread := &Spread{
+		spread := Spread{
 			ChannelID:   array.ChannelID,
 			ChannelName: array.ChannelName,
 			Pair:        array.Pair,
@@ -616,7 +621,7 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 		}
 		return spread, nil
 	case "book":
-		book := &Book{
+		book := Book{
 			ChannelID:   array.ChannelID,
 			ChannelName: array.ChannelName,
 			Pair:        array.Pair,
@@ -626,7 +631,7 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 		}
 
 		if book.Data.Asks == nil {
-			bookUpdate := &BookUpdate{
+			bookUpdate := BookUpdate{
 				ChannelID:   array.ChannelID,
 				ChannelName: array.ChannelName,
 				Pair:        array.Pair,
@@ -653,46 +658,47 @@ func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
 
 	var event event
 
-	modelOrError := func(model interface{}, err error) (interface{}, error) {
-		if err != nil {
+	if err := json.Unmarshal(bytes, &event); err != nil {
+		// This probably means the message is not a JSON object.
+		// All other kraken models are JSON arrays, so we try those.
+		// The case of broken JSON also ends up here.
+		return unmarshalArrayMessage(bytes)
+	}
+
+	if event.Status == "error" {
+		var model Error
+		if err := json.Unmarshal(bytes, &model); err != nil {
 			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
 		}
 		return model, nil
 	}
 
-	if err := json.Unmarshal(bytes, &event); err != nil {
-		// This probably means the message is not a JSON object.
-		// All other kraken models are JSON arrays, so we try those.
-		// The case of broken JSON also ends up here.
-		model, err := unmarshalArrayMessage(bytes)
-
-		if err != nil {
-			// TODO: remove
-			log.Printf("WARNING: error while parsing message %s", string(bytes))
-		}
-
-		return model, err
-	}
-
-	if event.Status == "error" {
-		var model Error
-		return modelOrError(&model, json.Unmarshal(bytes, &model))
-	}
-
 	switch event.Event {
 	case "heartbeat":
 		var model HeartBeat
-		return modelOrError(&model, json.Unmarshal(bytes, &model))
+		if err := json.Unmarshal(bytes, &model); err != nil {
+			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
+		}
+		return model, nil
 	case "pong":
 		var model Pong
-		return modelOrError(&model, json.Unmarshal(bytes, &model))
+		if err := json.Unmarshal(bytes, &model); err != nil {
+			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
+		}
+		return model, nil
 	case "subscriptionStatus":
 		var model SubscriptionStatus
-		return modelOrError(&model, json.Unmarshal(bytes, &model))
+		if err := json.Unmarshal(bytes, &model); err != nil {
+			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
+		}
+		return model, nil
 	case "systemStatus":
 		var model SystemStatus
-		return modelOrError(&model, json.Unmarshal(bytes, &model))
+		if err := json.Unmarshal(bytes, &model); err != nil {
+			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
+		}
+		return model, nil
 	default:
-		return modelOrError(nil, errors.New("unknown model"))
+		return nil, fmt.Errorf("unknown model %s", event.Event)
 	}
 }
