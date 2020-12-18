@@ -182,6 +182,23 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name:  "bookPayloadWithAsksAndBids",
+			bytes: []byte(`[912,{"a":[["0.46800000","2940.56589429","1608240638.875519"]]},{"b":[["0.46877000","0.00000000","1608240638.875818"]],"c":"751501448"},"book-10","XRP/EUR"]`),
+			expectedModel: &BookUpdate{
+				ChannelID:   912,
+				ChannelName: "book-10",
+				Pair:        "XRP/EUR",
+				Data: BookUpdateData{
+					Asks: []PriceLevel{
+						{Price: 0.468, Volume: 2940.56589429, Timestamp: time.Unix(1608240638, 875519037)},
+					},
+					Bids: []PriceLevel{
+						{Price: 0.46877, Volume: 0.0, Timestamp: time.Unix(1608240638, 875818014)},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {

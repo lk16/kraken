@@ -106,11 +106,37 @@ type arrayModel struct {
 }
 
 func (array *arrayModel) UnmarshalJSON(bytes []byte) error {
-	rawSlice, err := unmarshalArray(bytes, 4)
-	if err != nil {
+	var rawSlice []interface{}
+
+	if err := json.Unmarshal(bytes, &rawSlice); err != nil {
 		return err
 	}
 
+	if len(rawSlice) == 5 {
+		// Usually the slice length is 4, however for BookUpdate values we CAN get slices with length 5.
+		// In this case we get a separate JSON object at offset 2, other fields after that are as usual.
+		// For ease of handling we just merge offset 2 into offset 1
+
+		offset1, ok1 := rawSlice[1].(map[string]interface{})
+		offset2, ok2 := rawSlice[2].(map[string]interface{})
+
+		if !ok1 || !ok2 {
+			return errors.New("expected JSON object at offsets 1 and 2")
+		}
+
+		for key, value := range offset2 {
+			offset1[key] = value
+		}
+
+		// remove offset 2
+		rawSlice = append(rawSlice[:2], rawSlice[3:]...)
+	}
+
+	if len(rawSlice) != 4 {
+		return errors.New("expected JSON array with size 4")
+	}
+
+	var err error
 	if array.ChannelID, err = unmarshalNumberasInt64(rawSlice[0]); err != nil {
 		return fmt.Errorf("at position 0: %w", err)
 	}
