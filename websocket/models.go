@@ -44,6 +44,23 @@ func (float64string *Float64String) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
+type Int64String int64
+
+func (int64String *Int64String) UnmarshalJSON(bytes []byte) error {
+	var number json.Number
+	if err := json.Unmarshal(bytes, &number); err != nil {
+		return err
+	}
+
+	anInt64, err := number.Int64()
+	if err != nil {
+		return err
+	}
+
+	*int64String = Int64String(anInt64)
+	return nil
+}
+
 type Ping struct {
 	Event string `json:"event"`
 	ReqID int    `json:"reqid,omitempty"`
@@ -113,17 +130,14 @@ type HeartBeat struct {
 }
 
 type Ticker struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        TickerData
+	ChannelID   Int64String `json:"0"`
+	Data        TickerData  `json:"1"`
+	ChannelName string      `json:"2"`
+	Pair        string      `json:"3"`
 }
 
 type arrayModel struct {
-	ChannelID   int64
-	Data        interface{}
 	ChannelName string
-	Pair        string
 }
 
 type TickerData struct {
@@ -139,31 +153,31 @@ type TickerData struct {
 }
 
 type TickerAskBid struct {
-	Price          float64
-	WholeLotVolume int64
-	LotVolume      float64
+	Price          Float64String `json:"0"`
+	WholeLotVolume Int64String   `json:"1"`
+	LotVolume      Float64String `json:"2"`
 }
 
 type TickerTrades struct {
-	Today       int64
-	Last24Hours int64
+	Today       Int64String `json:"0"`
+	Last24Hours Int64String `json:"1"`
 }
 
 type TickerFloatStats struct {
-	Today       float64
-	Last24Hours float64
+	Today       Float64String `json:"0"`
+	Last24Hours Float64String `json:"1"`
 }
 
 type OHLC struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        OHLCData
+	ChannelID   Int64String `json:"0"`
+	Data        OHLCData    `json:"1"`
+	ChannelName string      `json:"2"`
+	Pair        string      `json:"3"`
 }
 
 type TickerClose struct {
-	Price     float64
-	LotVolume float64
+	Price     Float64String `json:"0"`
+	LotVolume Float64String `json:"1"`
 }
 
 type OHLCData struct {
@@ -179,41 +193,41 @@ type OHLCData struct {
 }
 
 type Trade struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        []TradeData
+	ChannelID   int64       `json:"0"`
+	Data        []TradeData `json:"1"`
+	ChannelName string      `json:"2"`
+	Pair        string      `json:"3"`
 }
 
 type TradeData struct {
-	Price     float64
-	Volume    float64
-	Time      time.Time
-	Side      string
-	OrderType string
-	Misc      string
+	Price     Float64String `json:"0"`
+	Volume    Float64String `json:"1"`
+	Time      UnixTime      `json:"2"`
+	Side      string        `json:"3"`
+	OrderType string        `json:"4"`
+	Misc      string        `json:"5"`
 }
 
 type Spread struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        SpreadData
+	ChannelID   int64      `json:"0"`
+	Data        SpreadData `json:"1"`
+	ChannelName string     `json:"2"`
+	Pair        string     `json:"3"`
 }
 
 type SpreadData struct {
-	Ask       float64
-	Bid       float64
-	Time      time.Time
-	BidVolume float64
-	AskVolume float64
+	Ask       Float64String `json:"0"`
+	Bid       Float64String `json:"1"`
+	Time      UnixTime      `json:"2"`
+	BidVolume Float64String `json:"3"`
+	AskVolume Float64String `json:"4"`
 }
 
 type Book struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        BookData
+	ChannelID   int64    `json:"0"`
+	Data        BookData `json:"1"`
+	ChannelName string   `json:"2"`
+	Pair        string   `json:"3"`
 }
 
 type BookData struct {
@@ -222,10 +236,10 @@ type BookData struct {
 }
 
 type BookUpdate struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        BookUpdateData
+	ChannelID   int64          `json:"0"`
+	Data        BookUpdateData `json:"1"`
+	ChannelName string         `json:"2"`
+	Pair        string         `json:"3"`
 }
 
 type BookUpdateData struct {
@@ -234,9 +248,9 @@ type BookUpdateData struct {
 }
 
 type PriceLevel struct {
-	Price     float64
-	Volume    float64
-	Timestamp time.Time
+	Price     Float64String `json:"0"`
+	Volume    Float64String `json:"1"`
+	Timestamp UnixTime      `json:"2"`
 }
 
 type Error struct {

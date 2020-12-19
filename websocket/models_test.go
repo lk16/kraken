@@ -62,17 +62,41 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 				`,"t":[22509,23886],"l":["0.36000000","0.36000000"],"h":["0.43605000","0.43605000"],"o":["0.38529000","0.395` +
 				`64000"]},"ticker","XBT/EUR"]`),
 			expectedModel: Ticker{
-				ChannelID: 916,
+				ChannelID: Int64String(916),
 				Data: TickerData{
-					Ask:                   TickerAskBid{Price: 0.427, WholeLotVolume: 16169, LotVolume: 16169.08316400},
-					Bid:                   TickerAskBid{Price: 0.4269, WholeLotVolume: 1000, LotVolume: 1000.0},
-					Close:                 TickerClose{Price: 0.427, LotVolume: 270.856836},
-					Volume:                TickerFloatStats{Today: 57719824.25617952, Last24Hours: 60354910.83998816},
-					VolumeWeightedAverage: TickerFloatStats{Today: 0.40286360, Last24Hours: 0.40226657},
-					Trades:                TickerTrades{Today: 22509, Last24Hours: 23886},
-					Low:                   TickerFloatStats{Today: 0.36, Last24Hours: 0.36},
-					High:                  TickerFloatStats{Today: 0.43605, Last24Hours: 0.43605},
-					Open:                  TickerFloatStats{Today: 0.38529, Last24Hours: 0.39564},
+					Ask: TickerAskBid{
+						Price:          Float64String(0.427),
+						WholeLotVolume: Int64String(16169),
+						LotVolume:      Float64String(16169.08316400),
+					},
+					Bid: TickerAskBid{
+						Price:          Float64String(0.4269),
+						WholeLotVolume: Int64String(1000),
+						LotVolume:      Float64String(1000.0),
+					},
+					Close: TickerClose{Price: 0.427, LotVolume: 270.856836},
+					Volume: TickerFloatStats{
+						Today:       Float64String(57719824.25617952),
+						Last24Hours: Float64String(60354910.83998816),
+					},
+
+					VolumeWeightedAverage: TickerFloatStats{
+						Today:       Float64String(0.40286360),
+						Last24Hours: Float64String(0.40226657),
+					},
+					Trades: TickerTrades{Today: Int64String(22509), Last24Hours: Int64String(23886)},
+					Low: TickerFloatStats{
+						Today:       Float64String(0.36),
+						Last24Hours: Float64String(0.36),
+					},
+					High: TickerFloatStats{
+						Today:       Float64String(0.43605),
+						Last24Hours: Float64String(0.43605),
+					},
+					Open: TickerFloatStats{
+						Today:       Float64String(0.38529),
+						Last24Hours: Float64String(0.39564),
+					},
 				},
 				ChannelName: "ticker",
 				Pair:        "XBT/EUR",
@@ -111,7 +135,7 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 					{
 						Price:     5541.2,
 						Volume:    0.15850568,
-						Time:      time.Unix(1534614057, 321597099),
+						Time:      UnixTime(time.Unix(1534614057, 321597099)),
 						Side:      "s",
 						OrderType: "l",
 						Misc:      "foo",
@@ -130,7 +154,7 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 				Data: SpreadData{
 					Ask:       5698.4,
 					Bid:       5700,
-					Time:      time.Unix(1542057299, 545897006),
+					Time:      UnixTime(time.Unix(1542057299, 545897006)),
 					BidVolume: 1.01234567,
 					AskVolume: 0.98765432,
 				},
@@ -149,14 +173,14 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 						{
 							Price:     5541.3,
 							Volume:    2.507,
-							Timestamp: time.Unix(1534614248, 123677968),
+							Timestamp: UnixTime(time.Unix(1534614248, 123677968)),
 						},
 					},
 					Bids: []PriceLevel{
 						{
 							Price:     5541.2,
 							Volume:    1.529,
-							Timestamp: time.Unix(1534614248, 765567064),
+							Timestamp: UnixTime(time.Unix(1534614248, 765567064)),
 						},
 					},
 				},
@@ -164,7 +188,7 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name:  "bookPayload",
+			name:  "bookUpdate",
 			bytes: []byte(`[1234,{"a":[["5541.30000","2.50700000","1534614248.456738"]],"c":"974942666"},"book-10","XBT/USD"]`),
 			expectedModel: BookUpdate{
 				ChannelID:   1234,
@@ -175,7 +199,7 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 						{
 							Price:     5541.3,
 							Volume:    2.507,
-							Timestamp: time.Unix(1534614248, 456737995),
+							Timestamp: UnixTime(time.Unix(1534614248, 456737995)),
 						},
 					},
 				},
@@ -183,7 +207,7 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name:  "bookPayloadWithAsksAndBids",
+			name:  "bookUpdateWithAsksAndBids",
 			bytes: []byte(`[912,{"a":[["0.46800000","2940.56589429","1608240638.875519"]]},{"b":[["0.46877000","0.00000000","1608240638.875818"]],"c":"751501448"},"book-10","XRP/EUR"]`),
 			expectedModel: BookUpdate{
 				ChannelID:   912,
@@ -191,10 +215,18 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 				Pair:        "XRP/EUR",
 				Data: BookUpdateData{
 					Asks: []PriceLevel{
-						{Price: 0.468, Volume: 2940.56589429, Timestamp: time.Unix(1608240638, 875519037)},
+						{
+							Price:     0.468,
+							Volume:    2940.56589429,
+							Timestamp: UnixTime(time.Unix(1608240638, 875519037)),
+						},
 					},
 					Bids: []PriceLevel{
-						{Price: 0.46877, Volume: 0.0, Timestamp: time.Unix(1608240638, 875818014)},
+						{
+							Price:     0.46877,
+							Volume:    0.0,
+							Timestamp: UnixTime(time.Unix(1608240638, 875818014)),
+						},
 					},
 				},
 			},
