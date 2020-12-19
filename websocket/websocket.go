@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 const (
-	publicWsURL = "wss://ws.kraken.com/"
+	publicWsURL       = "wss://ws.kraken.com/"
+	keepAliveDuration = 10 * time.Second
+	readDeadline      = keepAliveDuration
 )
 
 var errBinaryMessage = errors.New("unhandled binary message")
@@ -31,6 +34,7 @@ func NewClient() (*Client, error) {
 		return nil, err
 	}
 
+	go client.keepAliveLoop()
 	go client.publicWsListener()
 
 	return client, nil
@@ -40,26 +44,45 @@ func (client *Client) SetVerbose(verbose bool) {
 	client.verbose = verbose
 }
 
+func (client *Client) keepAliveLoop() {
+	ticker := time.NewTicker(keepAliveDuration)
+	for range ticker.C {
+		if err := client.Send(Ping{}); err != nil {
+			client.receiveChan <- fmt.Errorf("keep alive failed: %w", err)
+			return
+		}
+	}
+}
+
 func (client *Client) publicWsListener() {
 	for {
 		messageType, message, err := client.publicWs.ReadMessage()
+
 		if err != nil {
 			client.receiveChan <- err
+			if _, ok := err.(*websocket.CloseError); ok {
+				// TODO shutdown entire client
+				return
+			}
 		}
-		switch messageType {
-		case websocket.TextMessage:
-			if client.verbose {
-				log.Printf("RECV: %s", string(message))
-			}
-			model, err := unmarshalReceivedMessage(message)
-			if err != nil {
-				client.receiveChan <- err
-				break
-			}
-			client.receiveChan <- model
-		default:
+
+		if messageType != websocket.TextMessage {
 			client.receiveChan <- errBinaryMessage
+			continue
 		}
+
+		if client.verbose {
+			log.Printf("RECV: %s", string(message))
+		}
+
+		model, err := unmarshalReceivedMessage(message)
+
+		if err != nil {
+			client.receiveChan <- err
+			continue
+		}
+
+		client.receiveChan <- model
 	}
 }
 

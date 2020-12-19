@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -49,60 +48,6 @@ func unmarshalStringasFloat64(value interface{}) (float64, error) {
 	}
 
 	return float, nil
-}
-
-type event struct {
-	Event  string `json:"event"`
-	Status string `json:"status"`
-}
-
-type SystemStatus struct {
-	Event        string      `json:"event"`
-	ConnectionID json.Number `json:"connectionID"`
-	Status       string      `json:"status"`
-	Version      string      `json:"version"`
-}
-
-type SubscriptionDetails struct {
-	Depth        int    `json:"depth,omitempty"`
-	Interval     int    `json:"interval,omitempty"`
-	MaxRateCount int    `json:"maxratecount,omitempty"`
-	Name         string `json:"name"`
-	Token        string `json:"token,omitempty"`
-}
-
-type SubscriptionStatus struct {
-	Event        string              `json:"event"`
-	ChannelID    int                 `json:"channelID"`
-	ChannelName  string              `json:"channelName"`
-	ReqID        int                 `json:"reqid"`
-	Pair         string              `json:"pair"`
-	Status       string              `json:"status"`
-	Subscription SubscriptionDetails `json:"subscription"`
-	ErrorMessage string              `json:"errorMessage"`
-}
-
-type Pong struct {
-	Event string `json:"event"`
-	ReqID int    `json:"reqid"`
-}
-
-type HeartBeat struct {
-	Event string `json:"event"`
-}
-
-type Ticker struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        TickerData
-}
-
-type arrayModel struct {
-	ChannelID   int64
-	Data        interface{}
-	ChannelName string
-	Pair        string
 }
 
 func (array *arrayModel) UnmarshalJSON(bytes []byte) error {
@@ -178,24 +123,6 @@ func (ticker *Ticker) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-type TickerData struct {
-	Ask                   TickerAskBid     `json:"a"`
-	Bid                   TickerAskBid     `json:"b"`
-	Close                 TickerClose      `json:"c"`
-	Trades                TickerTrades     `json:"t"`
-	Volume                TickerFloatStats `json:"v"`
-	VolumeWeightedAverage TickerFloatStats `json:"p"`
-	Low                   TickerFloatStats `json:"l"`
-	High                  TickerFloatStats `json:"h"`
-	Open                  TickerFloatStats `json:"o"`
-}
-
-type TickerAskBid struct {
-	Price          float64
-	WholeLotVolume int64
-	LotVolume      float64
-}
-
 func (tickerAskBid *TickerAskBid) UnmarshalJSON(bytes []byte) error {
 	rawSlice, err := unmarshalArray(bytes, 3)
 	if err != nil {
@@ -217,11 +144,6 @@ func (tickerAskBid *TickerAskBid) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-type TickerClose struct {
-	Price     float64
-	LotVolume float64
-}
-
 func (tickerClose *TickerClose) UnmarshalJSON(bytes []byte) error {
 	rawSlice, err := unmarshalArray(bytes, 2)
 
@@ -238,11 +160,6 @@ func (tickerClose *TickerClose) UnmarshalJSON(bytes []byte) error {
 	}
 
 	return nil
-}
-
-type TickerTrades struct {
-	Today       int64
-	Last24Hours int64
 }
 
 func (tickerTrades *TickerTrades) UnmarshalJSON(bytes []byte) error {
@@ -263,11 +180,6 @@ func (tickerTrades *TickerTrades) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-type TickerFloatStats struct {
-	Today       float64
-	Last24Hours float64
-}
-
 func (tickerFloatStats *TickerFloatStats) UnmarshalJSON(bytes []byte) error {
 	rawSlice, err := unmarshalArray(bytes, 2)
 
@@ -284,25 +196,6 @@ func (tickerFloatStats *TickerFloatStats) UnmarshalJSON(bytes []byte) error {
 	}
 
 	return nil
-}
-
-type OHLC struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        OHLCData
-}
-
-type OHLCData struct {
-	Time                time.Time
-	EndTime             time.Time
-	Open                float64
-	High                float64
-	Low                 float64
-	Close               float64
-	VolumeWeightedPrice float64
-	Volume              float64
-	Count               int64
 }
 
 func (ohlcData *OHLCData) UnmarshalJSON(bytes []byte) error {
@@ -338,22 +231,6 @@ func (ohlcData *OHLCData) UnmarshalJSON(bytes []byte) error {
 	}
 
 	return nil
-}
-
-type Trade struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        []TradeData
-}
-
-type TradeData struct {
-	Price     float64
-	Volume    float64
-	Time      time.Time
-	Side      string
-	OrderType string
-	Misc      string
 }
 
 func (tradeData *TradeData) UnmarshalJSON(bytes []byte) error {
@@ -394,21 +271,6 @@ func (tradeData *TradeData) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-type Spread struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        SpreadData
-}
-
-type SpreadData struct {
-	Ask       float64
-	Bid       float64
-	Time      time.Time
-	BidVolume float64
-	AskVolume float64
-}
-
 func (spreadData *SpreadData) UnmarshalJSON(bytes []byte) error {
 	rawSlice, err := unmarshalArray(bytes, 5)
 
@@ -435,103 +297,6 @@ func (spreadData *SpreadData) UnmarshalJSON(bytes []byte) error {
 	spreadData.Time = time.Unix(int64(sec), int64(dec*(1e9)))
 
 	return nil
-}
-
-type Book struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        BookData
-}
-
-func (book *Book) Print() {
-	fmt.Printf("Asks:\n")
-	for i, ask := range book.Data.Asks {
-		if i == 10 {
-			break
-		}
-		fmt.Printf("%11.5f %11.5f\n", ask.Price, ask.Volume)
-	}
-
-	fmt.Printf("Bids:\n")
-	for i, bid := range book.Data.Bids {
-		if i == 10 {
-			break
-		}
-		fmt.Printf("%11.5f %11.5f\n", bid.Price, bid.Volume)
-	}
-}
-
-func updateSide(side []PriceLevel, updates []PriceLevel) []PriceLevel {
-	for _, update := range updates {
-		price := update.Price
-		removeLevel := update.Volume == 0.0
-
-		foundIndex := -1
-
-		for index, level := range side {
-			if level.Price == price {
-				foundIndex = index
-				break
-			}
-		}
-
-		if foundIndex != -1 {
-			if removeLevel {
-				// swap with last
-				side[len(side)-1], side[foundIndex] = side[foundIndex], side[len(side)-1]
-
-				// remove last item
-				side = side[:len(side)-1]
-
-			} else {
-				// update level
-				side[foundIndex] = update
-			}
-		} else {
-			if !removeLevel {
-				// add level
-				side = append(side, update)
-			}
-		}
-	}
-	return side
-}
-
-func (book *Book) Update(update BookUpdate) {
-	book.Data.Asks = updateSide(book.Data.Asks, update.Data.Asks)
-	book.Data.Bids = updateSide(book.Data.Bids, update.Data.Bids)
-
-	sort.Slice(book.Data.Asks, func(i, j int) bool {
-		return book.Data.Asks[i].Price < book.Data.Asks[j].Price
-	})
-
-	sort.Slice(book.Data.Bids, func(i, j int) bool {
-		return book.Data.Bids[i].Price > book.Data.Bids[j].Price
-	})
-}
-
-type BookData struct {
-	Asks []PriceLevel `json:"as"`
-	Bids []PriceLevel `json:"bs"`
-}
-
-type BookUpdate struct {
-	ChannelID   int64
-	ChannelName string
-	Pair        string
-	Data        BookUpdateData
-}
-
-type BookUpdateData struct {
-	Asks []PriceLevel `json:"a"`
-	Bids []PriceLevel `json:"b"`
-}
-
-type PriceLevel struct {
-	Price     float64
-	Volume    float64
-	Timestamp time.Time
 }
 
 func (priceLevel *PriceLevel) UnmarshalJSON(bytes []byte) error {
@@ -646,12 +411,6 @@ func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("unknown channel name prefix %s", channelNamePrefix)
 	}
-}
-
-type Error struct {
-	Message string `json:"errorMessage"`
-	Event   string `json:"event"`
-	Status  string `json:"status"`
 }
 
 func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
