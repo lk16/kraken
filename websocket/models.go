@@ -78,14 +78,14 @@ type Subscription struct {
 type Subscribe struct {
 	Event        string       `json:"event"`
 	ReqID        int          `json:"reqid,omitempty"`
-	Pair         []string     `json:"pair"`
+	Pair         []string     `json:"pair,omitempty"`
 	Subscription Subscription `json:"subscription"`
 }
 
 type Unsubscribe struct {
 	Event        string       `json:"event"`
-	ReqID        int          `json:"reqid"`
-	Pair         []string     `json:"pair"`
+	ReqID        int          `json:"reqid,omitempty"`
+	Pair         []string     `json:"pair,omitempty"`
 	Subscription Subscription `json:"subscription"`
 }
 
@@ -257,4 +257,27 @@ type Error struct {
 	Message string `json:"errorMessage"`
 	Event   string `json:"event"`
 	Status  string `json:"status"`
+}
+
+type OwnTrades struct {
+	Trades   []map[string]OwnTrade
+	Sequence int64
+}
+
+type OwnTrade struct {
+	Cost               float64 `json:"cost"`
+	Fee                float64 `json:"fee"`
+	Margin             float64 `json:"margin"`
+	OrderTransactionID string  `json:"ordertxid"`
+	OrderType          string  `json:"ordertype"`
+	Pair               string  `json:"pair"`
+	PosTransactionID   string  `json:"postxid"`
+	Price              float64 `json:"price"`
+	Time               float64 `json:"time"`
+	Type               string  `json:"type"`
+	Vol                float64 `json:"vol"`
+}
+
+type sequence struct {
+	Sequence int64 `json:"sequence"`
 }

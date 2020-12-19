@@ -242,6 +242,13 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name: "ownTrades",
+			bytes: []byte(`[[{"3HA3PV-3HA3P-3HA3PV":{"cost":"99.90000737","fee":"0.09792001","margin":"0.00000000","ordertxid":"ORWUAU-YUFW6-PSGDHG","ordertype":"limit","pair":"XRP/EUR",
+				"postxid":"TKH2SE-M7IF5-CFI7LT","price":"0.47957000","time":"1237535943.237535","type":"sell","vol":"123.456789"}}],"ownTrades",{"sequence":1}]`),
+			expectedModel: nil,
+			expectedError: nil,
+		},
 	}
 
 	for _, testCase := range testCases {

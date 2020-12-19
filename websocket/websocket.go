@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/lk16/kraken/rest"
 )
 
 const (
 	publicWsURL       = "wss://ws.kraken.com/"
+	privateWsURL      = "wss://ws-auth.kraken.com"
 	keepAliveDuration = 10 * time.Second
 	readDeadline      = keepAliveDuration
 )
@@ -19,9 +21,11 @@ const (
 var errBinaryMessage = errors.New("unhandled binary message")
 
 type Client struct {
-	publicWs    *websocket.Conn
-	receiveChan chan interface{}
-	verbose     bool
+	publicWs     *websocket.Conn
+	receiveChan  chan interface{}
+	verbose      bool
+	privateToken string
+	privateWs    *websocket.Conn
 }
 
 func NewClient() (*Client, error) {
@@ -30,18 +34,58 @@ func NewClient() (*Client, error) {
 	}
 	var err error
 
-	if client.publicWs, _, err = websocket.DefaultDialer.Dial(publicWsURL, nil); err != nil {
+	if err = client.ConnectWs("public"); err != nil {
 		return nil, err
 	}
 
 	go client.keepAliveLoop()
-	go client.publicWsListener()
 
 	return client, nil
 }
 
+func (client *Client) ConnectWs(publicPrivate string) error {
+	var (
+		connPtr **websocket.Conn
+		url     string
+	)
+
+	if publicPrivate == "public" {
+		connPtr = &client.publicWs
+		url = publicWsURL
+	} else {
+		connPtr = &client.privateWs
+		url = privateWsURL
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		return fmt.Errorf("could not connect to %s websocket: %w", publicPrivate, err)
+	}
+
+	*connPtr = conn
+
+	go client.wsListener(publicPrivate, conn)
+	return nil
+}
+
 func (client *Client) SetVerbose(verbose bool) {
 	client.verbose = verbose
+}
+
+func (client *Client) LoadWebsocketToken(key string, secret string) error {
+
+	restClient := rest.NewClient()
+	if err := restClient.SetAuth(key, secret); err != nil {
+		return err
+	}
+
+	token, err := restClient.GetWebSocketsToken()
+	if err != nil {
+		return err
+	}
+
+	client.privateToken = token.Token
+	return nil
 }
 
 func (client *Client) keepAliveLoop() {
@@ -54,16 +98,26 @@ func (client *Client) keepAliveLoop() {
 	}
 }
 
-func (client *Client) publicWsListener() {
+type DisconnectError struct {
+	PublicPrivate string
+	error
+}
+
+func (client *Client) wsListener(publicPrivate string, ws *websocket.Conn) {
+	log.Printf("listening on %s websocket", publicPrivate)
 	for {
-		messageType, message, err := client.publicWs.ReadMessage()
+		messageType, message, err := ws.ReadMessage()
 
 		if err != nil {
-			client.receiveChan <- err
 			if _, ok := err.(*websocket.CloseError); ok {
-				// TODO shutdown entire client
+				log.Printf("RECV %7s: dicconnect %s", publicPrivate, err.Error())
+
+				client.receiveChan <- DisconnectError{error: err, PublicPrivate: publicPrivate}
 				return
 			}
+			log.Printf("RECV %7s: error %s", publicPrivate, err.Error())
+
+			client.receiveChan <- err
 		}
 
 		if messageType != websocket.TextMessage {
@@ -72,7 +126,7 @@ func (client *Client) publicWsListener() {
 		}
 
 		if client.verbose {
-			log.Printf("RECV: %s", string(message))
+			log.Printf("RECV %7s: %s", publicPrivate, string(message))
 		}
 
 		model, err := unmarshalReceivedMessage(message)
@@ -91,31 +145,49 @@ func (client *Client) Listen() <-chan interface{} {
 }
 
 func (client *Client) Send(rawMessage interface{}) error {
+	return client.send(rawMessage, "public")
+}
 
-	send := func(rawMessage interface{}) error {
+func (client *Client) SendPrivate(rawMessage interface{}) error {
+	return client.send(rawMessage, "private")
+}
+
+func (client *Client) send(rawMessage interface{}, privatePublic string) error {
+
+	doSend := func(rawMessage interface{}) error {
 		bytes, err := json.Marshal(rawMessage)
 		if err != nil {
 			return err
 		}
 
 		if client.verbose {
-			log.Printf("SEND: %s", string(bytes))
+			log.Printf("SEND %7s: %s", privatePublic, string(bytes))
 		}
-		return client.publicWs.WriteJSON(rawMessage)
+
+		if privatePublic == "public" {
+			return client.publicWs.WriteJSON(rawMessage)
+		}
+		err = client.privateWs.WriteJSON(rawMessage)
+		return err
 	}
 
 	switch message := rawMessage.(type) {
 	case Ping:
 		message.Event = "ping"
-		return send(message)
+		return doSend(message)
 	case Subscribe:
 		message.Event = "subscribe"
-		return send(message)
+		if privatePublic == "private" {
+			message.Subscription.Token = client.privateToken
+		}
+		return doSend(message)
 	case Unsubscribe:
 		message.Event = "unsubscribe"
-		return send(message)
+		if privatePublic == "private" {
+			message.Subscription.Token = client.privateToken
+		}
+		return doSend(message)
 	default:
 		return fmt.Errorf("unsupported message type %T", message)
 	}
-
 }
