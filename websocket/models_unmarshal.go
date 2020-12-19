@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lk16/noarray"
 )
 
 func unmarshalArray(bytes []byte, expectedLength int) ([]interface{}, error) {
@@ -199,38 +201,7 @@ func (tickerFloatStats *TickerFloatStats) UnmarshalJSON(bytes []byte) error {
 }
 
 func (ohlcData *OHLCData) UnmarshalJSON(bytes []byte) error {
-	rawSlice, err := unmarshalArray(bytes, 9)
-
-	if err != nil {
-		return err
-	}
-
-	var currentTime, endTime float64
-
-	floatPointers := []*float64{
-		&currentTime, &endTime, &ohlcData.Open, &ohlcData.High, &ohlcData.Low,
-		&ohlcData.Close, &ohlcData.VolumeWeightedPrice, &ohlcData.Volume,
-	}
-
-	for offset := range floatPointers {
-		var value float64
-		if value, err = unmarshalStringasFloat64(rawSlice[offset]); err != nil {
-			return fmt.Errorf("at offset %d: %w", offset, err)
-		}
-		*floatPointers[offset] = value
-	}
-
-	sec, dec := math.Modf(currentTime)
-	ohlcData.Time = time.Unix(int64(sec), int64(dec*(1e9)))
-
-	sec, dec = math.Modf(endTime)
-	ohlcData.EndTime = time.Unix(int64(sec), int64(dec*(1e9)))
-
-	if ohlcData.Count, err = unmarshalNumberasInt64(rawSlice[8]); err != nil {
-		return fmt.Errorf("at offset 8: %w", err)
-	}
-
-	return nil
+	return noarray.UnmarshalAsObject(bytes, ohlcData)
 }
 
 func (tradeData *TradeData) UnmarshalJSON(bytes []byte) error {

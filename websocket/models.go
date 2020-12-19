@@ -2,8 +2,47 @@ package websocket
 
 import (
 	"encoding/json"
+	"fmt"
+	"math"
+	"strconv"
 	"time"
 )
+
+type UnixTime time.Time
+
+func (unixTime *UnixTime) UnmarshalJSON(bytes []byte) error {
+	var str string
+	if err := json.Unmarshal(bytes, &str); err != nil {
+		return err
+	}
+
+	var unixTimeFloat float64
+	var err error
+	if unixTimeFloat, err = strconv.ParseFloat(str, 64); err != nil {
+		return fmt.Errorf("could not parse JSON string as float64: %w", err)
+	}
+
+	sec, dec := math.Modf(unixTimeFloat)
+	*unixTime = UnixTime(time.Unix(int64(sec), int64(dec*(1e9))))
+	return nil
+}
+
+type Float64String float64
+
+func (float64string *Float64String) UnmarshalJSON(bytes []byte) error {
+	var number json.Number
+	if err := json.Unmarshal(bytes, &number); err != nil {
+		return err
+	}
+
+	float, err := number.Float64()
+	if err != nil {
+		return err
+	}
+
+	*float64string = Float64String(float)
+	return nil
+}
 
 type Ping struct {
 	Event string `json:"event"`
@@ -128,15 +167,15 @@ type TickerClose struct {
 }
 
 type OHLCData struct {
-	Time                time.Time
-	EndTime             time.Time
-	Open                float64
-	High                float64
-	Low                 float64
-	Close               float64
-	VolumeWeightedPrice float64
-	Volume              float64
-	Count               int64
+	Time                UnixTime      `json:"0"`
+	EndTime             UnixTime      `json:"1"`
+	Open                Float64String `json:"2"`
+	High                Float64String `json:"3"`
+	Low                 Float64String `json:"4"`
+	Close               Float64String `json:"5"`
+	VolumeWeightedPrice Float64String `json:"6"`
+	Volume              Float64String `json:"7"`
+	Count               int64         `json:"8"`
 }
 
 type Trade struct {
