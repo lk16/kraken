@@ -260,24 +260,25 @@ type Error struct {
 }
 
 type OwnTrades struct {
-	Trades   []map[string]OwnTrade
-	Sequence int64
+	Trades      []map[string]OwnTrade
+	ChannelName string
+	Sequence    Sequence
 }
 
 type OwnTrade struct {
-	Cost               float64 `json:"cost"`
-	Fee                float64 `json:"fee"`
-	Margin             float64 `json:"margin"`
-	OrderTransactionID string  `json:"ordertxid"`
-	OrderType          string  `json:"ordertype"`
-	Pair               string  `json:"pair"`
-	PosTransactionID   string  `json:"postxid"`
-	Price              float64 `json:"price"`
-	Time               float64 `json:"time"`
-	Type               string  `json:"type"`
-	Vol                float64 `json:"vol"`
+	Cost               Float64String `json:"cost"`
+	Fee                Float64String `json:"fee"`
+	Margin             Float64String `json:"margin"`
+	OrderTransactionID string        `json:"ordertxid"`
+	OrderType          string        `json:"ordertype"`
+	Pair               string        `json:"pair"`
+	PosTransactionID   string        `json:"postxid"`
+	Price              Float64String `json:"price"`
+	Time               UnixTime      `json:"time"`
+	Type               string        `json:"type"`
+	Volume             Float64String `json:"vol"`
 }
 
-type sequence struct {
+type Sequence struct {
 	Sequence int64 `json:"sequence"`
 }

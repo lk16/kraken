@@ -246,7 +246,27 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			name: "ownTrades",
 			bytes: []byte(`[[{"3HA3PV-3HA3P-3HA3PV":{"cost":"99.90000737","fee":"0.09792001","margin":"0.00000000","ordertxid":"ORWUAU-YUFW6-PSGDHG","ordertype":"limit","pair":"XRP/EUR",
 				"postxid":"TKH2SE-M7IF5-CFI7LT","price":"0.47957000","time":"1237535943.237535","type":"sell","vol":"123.456789"}}],"ownTrades",{"sequence":1}]`),
-			expectedModel: nil,
+			expectedModel: OwnTrades{
+				Trades: []map[string]OwnTrade{
+					{"3HA3PV-3HA3P-3HA3PV": OwnTrade{
+						Cost:               99.90000737,
+						Fee:                0.09792001,
+						Margin:             0.00000000,
+						OrderTransactionID: "ORWUAU-YUFW6-PSGDHG",
+						OrderType:          "limit",
+						Pair:               "XRP/EUR",
+						PosTransactionID:   "TKH2SE-M7IF5-CFI7LT",
+						Price:              0.47957000,
+						Time:               UnixTime(time.Unix(1237535943, 237534999)),
+						Type:               "sell",
+						Volume:             123.456789,
+					}},
+				},
+				ChannelName: "ownTrades",
+				Sequence: Sequence{
+					Sequence: 1,
+				},
+			},
 			expectedError: nil,
 		},
 	}

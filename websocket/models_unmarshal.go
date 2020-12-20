@@ -188,6 +188,16 @@ func (bookUpdate *BookUpdate) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
+func (ownTrades *OwnTrades) UnmarshalJSON(bytes []byte) error {
+
+	slice := []interface{}{
+		&ownTrades.Trades,
+		&ownTrades.ChannelName,
+		&ownTrades.Sequence,
+	}
+	return json.Unmarshal(bytes, &slice)
+}
+
 func getMessageType(bytes []byte) (string, error) {
 	var event event
 	if err := json.Unmarshal(bytes, &event); err != nil {
@@ -231,13 +241,14 @@ func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
 	targetMap := map[string]interface{}{
 		"error":              &Error{},
 		"heartbeat":          &HeartBeat{},
+		"ohlc":               &OHLC{},
+		"ownTrades":          &OwnTrades{},
 		"pong":               &Pong{},
+		"spread":             &Spread{},
 		"subscriptionStatus": &SubscriptionStatus{},
 		"systemStatus":       &SystemStatus{},
 		"ticker":             &Ticker{},
-		"ohlc":               &OHLC{},
 		"trade":              &Trade{},
-		"spread":             &Spread{},
 	}
 
 	target, ok := targetMap[messageType]
