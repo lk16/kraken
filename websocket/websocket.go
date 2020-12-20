@@ -65,6 +65,7 @@ func (client *Client) ConnectWs(publicPrivate string) error {
 	*connPtr = conn
 
 	go client.wsListener(publicPrivate, conn)
+	go client.privateKeepAliveLoop()
 	return nil
 }
 
@@ -98,6 +99,17 @@ func (client *Client) keepAliveLoop() {
 	}
 }
 
+// TODO consider refactoring this
+func (client *Client) privateKeepAliveLoop() {
+	ticker := time.NewTicker(keepAliveDuration)
+	for range ticker.C {
+		if err := client.SendPrivate(Ping{}); err != nil {
+			client.receiveChan <- fmt.Errorf("keep alive failed: %w", err)
+			return
+		}
+	}
+}
+
 type DisconnectError struct {
 	PublicPrivate string
 	error
@@ -118,6 +130,7 @@ func (client *Client) wsListener(publicPrivate string, ws *websocket.Conn) {
 			log.Printf("RECV %7s: error %s", publicPrivate, err.Error())
 
 			client.receiveChan <- err
+			continue
 		}
 
 		if messageType != websocket.TextMessage {

@@ -200,12 +200,27 @@ func (ownTrades *OwnTrades) UnmarshalJSON(bytes []byte) error {
 
 func (openOrders *OpenOrders) UnmarshalJSON(bytes []byte) error {
 
+	// we want to combine all these maps into one for convenience
+	var ordersMapSlice []map[string]OpenOrder
+
 	slice := []interface{}{
-		&openOrders.Orders,
+		&ordersMapSlice,
 		&openOrders.ChannelName,
 		&openOrders.Sequence,
 	}
-	return json.Unmarshal(bytes, &slice)
+
+	if err := json.Unmarshal(bytes, &slice); err != nil {
+		return err
+	}
+
+	openOrders.Orders = make(map[string]OpenOrder)
+	for _, ordersMap := range ordersMapSlice {
+		for key, value := range ordersMap {
+			openOrders.Orders[key] = value
+		}
+	}
+
+	return nil
 }
 
 func getMessageType(bytes []byte) (string, error) {

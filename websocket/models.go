@@ -294,7 +294,7 @@ type Sequence struct {
 }
 
 type OpenOrders struct {
-	Orders      []map[string]OpenOrder
+	Orders      map[string]OpenOrder
 	ChannelName string
 	Sequence    Sequence
 }
@@ -316,6 +316,8 @@ type OpenOrder struct {
 	UserReference  int64                `json:"userref"`
 	Volume         Float64String        `json:"vol"`
 	VolumeExecuted Float64String        `json:"vol_exec"`
+	AveragePrice   Float64String        `json:"avg_price"`
+	CancelReason   string               `json:"cancel_reason"`
 }
 
 type OpenOrderDescription struct {
