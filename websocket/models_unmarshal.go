@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -187,104 +188,68 @@ func (bookUpdate *BookUpdate) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func unmarshalArrayMessage(bytes []byte) (interface{}, error) {
-	var array arrayModel
+func getMessageType(bytes []byte) (string, error) {
+	var event event
+	if err := json.Unmarshal(bytes, &event); err != nil {
 
-	if err := json.Unmarshal(bytes, &array); err != nil {
-		return nil, fmt.Errorf("could not unmarshal into arrayModel: %w", err)
+		var array arrayModel
+		if err := json.Unmarshal(bytes, &array); err != nil {
+			return "", fmt.Errorf("could not unmarshal into arrayModel: %w", err)
+		}
+
+		return strings.Split(array.ChannelName, "-")[0], nil
 	}
 
-	var err error
-	channelNamePrefix := strings.Split(array.ChannelName, "-")[0]
+	if event.Status == "error" {
+		return "error", nil
+	}
 
-	switch channelNamePrefix {
-	case "ticker":
-		var ticker Ticker
-		if err = json.Unmarshal(bytes, &ticker); err != nil {
-			return nil, fmt.Errorf("parsing Ticker: %w", err)
-		}
-		return ticker, nil
-	case "ohlc":
-		var ohlc OHLC
-		if err = json.Unmarshal(bytes, &ohlc); err != nil {
-			return nil, fmt.Errorf("parsing OHLC: %w", err)
-		}
-		return ohlc, nil
-	case "trade":
-		var trade Trade
-		if err = json.Unmarshal(bytes, &trade); err != nil {
-			return nil, fmt.Errorf("parsing Trade: %w", err)
-		}
-		return trade, nil
-	case "spread":
-		var spread Spread
-		if err = json.Unmarshal(bytes, &spread); err != nil {
-			return nil, fmt.Errorf("parsing Spread: %w", err)
-		}
-		return spread, nil
-	case "book":
+	return event.Event, nil
+}
+
+func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
+
+	messageType, err := getMessageType(bytes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if messageType == "book" {
 		var book Book
-		err = json.Unmarshal(bytes, &book)
-		if err == nil && book.Data.Asks != nil {
+		if err := json.Unmarshal(bytes, &book); err == nil && book.Data.Asks != nil {
 			return book, nil
 		}
 
 		var bookUpdate BookUpdate
 		if err = json.Unmarshal(bytes, &bookUpdate); err != nil {
-			return nil, fmt.Errorf("parsing Book/BookUpdate: %w", err)
+			return nil, fmt.Errorf("parsing %s failed: %w", messageType, err)
 		}
 		return bookUpdate, nil
-
-	default:
-		return nil, fmt.Errorf("unknown channel name prefix %s", channelNamePrefix)
-	}
-}
-
-func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
-
-	var event event
-
-	if err := json.Unmarshal(bytes, &event); err != nil {
-		// This probably means the message is not a JSON object.
-		// All other kraken models are JSON arrays, so we try those.
-		// The case of broken JSON also ends up here.
-		return unmarshalArrayMessage(bytes)
 	}
 
-	if event.Status == "error" {
-		var model Error
-		if err := json.Unmarshal(bytes, &model); err != nil {
-			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
-		}
-		return model, nil
+	targetMap := map[string]interface{}{
+		"error":              &Error{},
+		"heartbeat":          &HeartBeat{},
+		"pong":               &Pong{},
+		"subscriptionStatus": &SubscriptionStatus{},
+		"systemStatus":       &SystemStatus{},
+		"ticker":             &Ticker{},
+		"ohlc":               &OHLC{},
+		"trade":              &Trade{},
+		"spread":             &Spread{},
 	}
 
-	switch event.Event {
-	case "heartbeat":
-		var model HeartBeat
-		if err := json.Unmarshal(bytes, &model); err != nil {
-			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
-		}
-		return model, nil
-	case "pong":
-		var model Pong
-		if err := json.Unmarshal(bytes, &model); err != nil {
-			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
-		}
-		return model, nil
-	case "subscriptionStatus":
-		var model SubscriptionStatus
-		if err := json.Unmarshal(bytes, &model); err != nil {
-			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
-		}
-		return model, nil
-	case "systemStatus":
-		var model SystemStatus
-		if err := json.Unmarshal(bytes, &model); err != nil {
-			return nil, fmt.Errorf("parsing %s failed: %w", event.Event, err)
-		}
-		return model, nil
-	default:
-		return nil, fmt.Errorf("unknown model %s", event.Event)
+	target, ok := targetMap[messageType]
+
+	if !ok {
+		return nil, fmt.Errorf("unknown message type %s", messageType)
 	}
+
+	if err := json.Unmarshal(bytes, &target); err != nil {
+		return nil, fmt.Errorf("parsing %s failed: %w", messageType, err)
+	}
+
+	return reflect.Indirect(reflect.ValueOf(target)).Interface(), nil
+
 }
