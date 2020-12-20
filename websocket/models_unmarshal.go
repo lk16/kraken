@@ -198,6 +198,16 @@ func (ownTrades *OwnTrades) UnmarshalJSON(bytes []byte) error {
 	return json.Unmarshal(bytes, &slice)
 }
 
+func (openOrders *OpenOrders) UnmarshalJSON(bytes []byte) error {
+
+	slice := []interface{}{
+		&openOrders.Orders,
+		&openOrders.ChannelName,
+		&openOrders.Sequence,
+	}
+	return json.Unmarshal(bytes, &slice)
+}
+
 func getMessageType(bytes []byte) (string, error) {
 	var event event
 	if err := json.Unmarshal(bytes, &event); err != nil {
@@ -242,6 +252,7 @@ func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
 		"error":              &Error{},
 		"heartbeat":          &HeartBeat{},
 		"ohlc":               &OHLC{},
+		"openOrders":         &OpenOrders{},
 		"ownTrades":          &OwnTrades{},
 		"pong":               &Pong{},
 		"spread":             &Spread{},

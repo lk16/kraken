@@ -11,6 +11,11 @@ import (
 type UnixTime time.Time
 
 func (unixTime *UnixTime) UnmarshalJSON(bytes []byte) error {
+
+	if string(bytes) == "null" {
+		return nil
+	}
+
 	var str string
 	if err := json.Unmarshal(bytes, &str); err != nil {
 		return err
@@ -30,6 +35,11 @@ func (unixTime *UnixTime) UnmarshalJSON(bytes []byte) error {
 type Float64String float64
 
 func (float64string *Float64String) UnmarshalJSON(bytes []byte) error {
+
+	if len(bytes) == 0 {
+		return nil
+	}
+
 	var number json.Number
 	if err := json.Unmarshal(bytes, &number); err != nil {
 		return err
@@ -281,4 +291,40 @@ type OwnTrade struct {
 
 type Sequence struct {
 	Sequence int64 `json:"sequence"`
+}
+
+type OpenOrders struct {
+	Orders      []map[string]OpenOrder
+	ChannelName string
+	Sequence    Sequence
+}
+
+type OpenOrder struct {
+	Cost           Float64String        `json:"cost"`
+	Description    OpenOrderDescription `json:"descr"`
+	ExpirationTime UnixTime             `json:"expiretm"`
+	Fee            Float64String        `json:"fee"`
+	LimitPrice     Float64String        `json:"limitprice"`
+	Miscellaneous  string               `json:"misc"`
+	OFlags         string               `json:"oflags"`
+	OpenTime       UnixTime             `json:"opentm"`
+	Price          Float64String        `json:"price"`
+	ReferenceID    string               `json:"refid"`
+	StartTime      UnixTime             `json:"starttm"`
+	Status         string               `json:"status"`
+	StopPrice      Float64String        `json:"stopprice"`
+	UserReference  int64                `json:"userref"`
+	Volume         Float64String        `json:"vol"`
+	VolumeExecuted Float64String        `json:"vol_exec"`
+}
+
+type OpenOrderDescription struct {
+	ConditionalClose string        `json:"close"`
+	Leverage         string        `json:"leverage"`
+	Order            string        `json:"order"`
+	OrderType        string        `json:"ordertype"`
+	Pair             string        `json:"pair"`
+	Price            Float64String `json:"price"`
+	Price2           Float64String `json:"price2"`
+	Type             string        `json:"type"`
 }

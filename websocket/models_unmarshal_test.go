@@ -269,6 +269,51 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name: "openOrders",
+			bytes: []byte(`[[{"OGTT3Y-C6I3P-XRI6HX": {"cost": "1.00000","descr": {"close": "","leverage": "0:1","order": "sell 10.00345345 XBT/EUR @ limit 34.50000 with 0:1 leverage"` +
+				`,"ordertype": "limit","pair": "XBT/EUR","price": "34.50000","price2": "55.00000","type": "sell"},"expiretm": "0.000000","fee": "0.00000","limitprice": "34.50000","misc":` +
+				`"","oflags": "fcib","opentm": "0.000000","price": "34.50000","refid": "OKIVMP-5GVZN-Z2D2UA","starttm": "0.000000","status": "open","stopprice": "0.000000","userref": 0,"` +
+				`vol": "10.00345345","vol_exec": "9.00000000"}}],"openOrders",{"sequence": 234}]`),
+			expectedModel: OpenOrders{
+				Orders: []map[string]OpenOrder{
+					{
+						"OGTT3Y-C6I3P-XRI6HX": {
+							Cost: 1.00000,
+							Description: OpenOrderDescription{
+								ConditionalClose: "",
+								Leverage:         "0:1",
+								Order:            "sell 10.00345345 XBT/EUR @ limit 34.50000 with 0:1 leverage",
+								OrderType:        "limit",
+								Pair:             "XBT/EUR",
+								Price:            34.50000,
+								Price2:           55.00000,
+								Type:             "sell",
+							},
+							ExpirationTime: UnixTime(time.Unix(0, 0)),
+							Fee:            0.00000,
+							LimitPrice:     34.50000,
+							Miscellaneous:  "",
+							OFlags:         "fcib",
+							OpenTime:       UnixTime(time.Unix(0, 0)),
+							Price:          34.50000,
+							ReferenceID:    "OKIVMP-5GVZN-Z2D2UA",
+							StartTime:      UnixTime(time.Unix(0, 0)),
+							Status:         "open",
+							StopPrice:      0.000000,
+							UserReference:  0,
+							Volume:         10.00345345,
+							VolumeExecuted: 9.00000000,
+						},
+					},
+				},
+				ChannelName: "openOrders",
+				Sequence: Sequence{
+					Sequence: 234,
+				},
+			},
+			expectedError: nil,
+		},
 	}
 
 	for _, testCase := range testCases {
