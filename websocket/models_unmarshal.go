@@ -5,111 +5,185 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/lk16/noarray"
 )
 
 func (array *arrayModel) UnmarshalJSON(bytes []byte) error {
-	var rawSlice []interface{}
+	var rawMessages []json.RawMessage
 
-	if err := json.Unmarshal(bytes, &rawSlice); err != nil {
+	if err := json.Unmarshal(bytes, &rawMessages); err != nil {
 		return err
 	}
 
-	if len(rawSlice) < 2 {
+	if len(rawMessages) < 2 {
 		return errors.New("Expected JSON array of at least 3")
 	}
 
-	channelName, ok := rawSlice[len(rawSlice)-2].(string)
-	if !ok {
-		return fmt.Errorf("expected string at offset %d", len(rawSlice)-2)
-	}
-
-	array.ChannelName = channelName
-	return nil
+	return json.Unmarshal(rawMessages[len(rawMessages)-2], &array.ChannelName)
 }
 
 func (ticker *Ticker) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, ticker)
+	slice := []interface{}{
+		&ticker.ChannelID,
+		&ticker.Data,
+		&ticker.ChannelName,
+		&ticker.Pair,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (tickerAskBid *TickerAskBid) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, tickerAskBid)
+	slice := []interface{}{
+		&tickerAskBid.Price,
+		&tickerAskBid.WholeLotVolume,
+		&tickerAskBid.LotVolume,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (tickerClose *TickerClose) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, tickerClose)
+	slice := []interface{}{
+		&tickerClose.Price,
+		&tickerClose.LotVolume,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (tickerTrades *TickerTrades) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, tickerTrades)
+	slice := []interface{}{
+		&tickerTrades.Today,
+		&tickerTrades.Last24Hours,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (tickerFloatStats *TickerFloatStats) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, tickerFloatStats)
+	slice := []interface{}{
+		&tickerFloatStats.Today,
+		&tickerFloatStats.Last24Hours,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (ohlcData *OHLCData) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, ohlcData)
+	slice := []interface{}{
+		&ohlcData.Time,
+		&ohlcData.EndTime,
+		&ohlcData.Open,
+		&ohlcData.High,
+		&ohlcData.Low,
+		&ohlcData.Close,
+		&ohlcData.VolumeWeightedPrice,
+		&ohlcData.Volume,
+		&ohlcData.Count,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (ohlc *OHLC) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, ohlc)
+	slice := []interface{}{
+		&ohlc.ChannelID,
+		&ohlc.Data,
+		&ohlc.ChannelName,
+		&ohlc.Pair,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (trade *Trade) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, trade)
+	slice := []interface{}{
+		&trade.ChannelID,
+		&trade.Data,
+		&trade.ChannelName,
+		&trade.Pair,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (spread *Spread) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, spread)
+	slice := []interface{}{
+		&spread.ChannelID,
+		&spread.Data,
+		&spread.ChannelName,
+		&spread.Pair,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (tradeData *TradeData) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, tradeData)
+	slice := []interface{}{
+		&tradeData.Price,
+		&tradeData.Volume,
+		&tradeData.Time,
+		&tradeData.Side,
+		&tradeData.OrderType,
+		&tradeData.Misc,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (spreadData *SpreadData) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, spreadData)
+	slice := []interface{}{
+		&spreadData.Ask,
+		&spreadData.Bid,
+		&spreadData.Time,
+		&spreadData.BidVolume,
+		&spreadData.AskVolume,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (book *Book) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, book)
+	slice := []interface{}{
+		&book.ChannelID,
+		&book.Data,
+		&book.ChannelName,
+		&book.Pair,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (priceLevel *PriceLevel) UnmarshalJSON(bytes []byte) error {
-	return noarray.UnmarshalAsObject(bytes, priceLevel)
+
+	slice := []interface{}{
+		&priceLevel.Price,
+		&priceLevel.Volume,
+		&priceLevel.Timestamp,
+	}
+	return json.Unmarshal(bytes, &slice)
 }
 
 func (bookUpdate *BookUpdate) UnmarshalJSON(bytes []byte) error {
-	if err := noarray.UnmarshalAsObject(bytes, bookUpdate); err == nil {
+
+	slice := []interface{}{
+		&bookUpdate.ChannelID,
+		&bookUpdate.Data,
+		&bookUpdate.ChannelName,
+		&bookUpdate.Pair,
+	}
+
+	if err := json.Unmarshal(bytes, &slice); err == nil {
 		return nil
 	}
 
 	// Asks and bids can arrive in the same update.
-	// When this happens they come in a different object (for
+	// When this happens they come in a separate object (for
 	// some reason) at offsets 1 and 2. We merge them here
 	// and proceed as-if they came in one JSON object.
+	var separateBids BookUpdateData
 
-	type bookUpdateFiveItems struct {
-		ChannelID   int64          `json:"0"`
-		Asks        BookUpdateData `json:"1"`
-		Bids        BookUpdateData `json:"2"`
-		ChannelName string         `json:"3"`
-		Pair        string         `json:"4"`
+	slice = []interface{}{
+		&bookUpdate.ChannelID,
+		&bookUpdate.Data,
+		&separateBids,
+		&bookUpdate.ChannelName,
+		&bookUpdate.Pair,
 	}
 
-	var bookUpdateAsksAndBids bookUpdateFiveItems
-	if err := noarray.UnmarshalAsObject(bytes, &bookUpdateAsksAndBids); err != nil {
+	if err := json.Unmarshal(bytes, &slice); err != nil {
 		return err
 	}
 
-	bookUpdate.ChannelID = bookUpdateAsksAndBids.ChannelID
-	bookUpdate.Data.Asks = bookUpdateAsksAndBids.Asks.Asks
-	bookUpdate.Data.Bids = bookUpdateAsksAndBids.Bids.Bids
-	bookUpdate.ChannelName = bookUpdateAsksAndBids.ChannelName
-	bookUpdate.Pair = bookUpdateAsksAndBids.Pair
-
+	bookUpdate.Data.Bids = separateBids.Bids
 	return nil
 }
 

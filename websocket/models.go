@@ -130,10 +130,10 @@ type HeartBeat struct {
 }
 
 type Ticker struct {
-	ChannelID   Int64String `json:"0"`
-	Data        TickerData  `json:"1"`
-	ChannelName string      `json:"2"`
-	Pair        string      `json:"3"`
+	ChannelID   Int64String
+	Data        TickerData
+	ChannelName string
+	Pair        string
 }
 
 type arrayModel struct {
@@ -153,81 +153,81 @@ type TickerData struct {
 }
 
 type TickerAskBid struct {
-	Price          Float64String `json:"0"`
-	WholeLotVolume Int64String   `json:"1"`
-	LotVolume      Float64String `json:"2"`
+	Price          Float64String
+	WholeLotVolume Int64String
+	LotVolume      Float64String
 }
 
 type TickerTrades struct {
-	Today       Int64String `json:"0"`
-	Last24Hours Int64String `json:"1"`
+	Today       Int64String
+	Last24Hours Int64String
 }
 
 type TickerFloatStats struct {
-	Today       Float64String `json:"0"`
-	Last24Hours Float64String `json:"1"`
+	Today       Float64String
+	Last24Hours Float64String
 }
 
 type OHLC struct {
-	ChannelID   Int64String `json:"0"`
-	Data        OHLCData    `json:"1"`
-	ChannelName string      `json:"2"`
-	Pair        string      `json:"3"`
+	ChannelID   Int64String
+	Data        OHLCData
+	ChannelName string
+	Pair        string
 }
 
 type TickerClose struct {
-	Price     Float64String `json:"0"`
-	LotVolume Float64String `json:"1"`
+	Price     Float64String
+	LotVolume Float64String
 }
 
 type OHLCData struct {
-	Time                UnixTime      `json:"0"`
-	EndTime             UnixTime      `json:"1"`
-	Open                Float64String `json:"2"`
-	High                Float64String `json:"3"`
-	Low                 Float64String `json:"4"`
-	Close               Float64String `json:"5"`
-	VolumeWeightedPrice Float64String `json:"6"`
-	Volume              Float64String `json:"7"`
-	Count               int64         `json:"8"`
+	Time                UnixTime
+	EndTime             UnixTime
+	Open                Float64String
+	High                Float64String
+	Low                 Float64String
+	Close               Float64String
+	VolumeWeightedPrice Float64String
+	Volume              Float64String
+	Count               int64
 }
 
 type Trade struct {
-	ChannelID   int64       `json:"0"`
-	Data        []TradeData `json:"1"`
-	ChannelName string      `json:"2"`
-	Pair        string      `json:"3"`
+	ChannelID   int64
+	Data        []TradeData
+	ChannelName string
+	Pair        string
 }
 
 type TradeData struct {
-	Price     Float64String `json:"0"`
-	Volume    Float64String `json:"1"`
-	Time      UnixTime      `json:"2"`
-	Side      string        `json:"3"`
-	OrderType string        `json:"4"`
-	Misc      string        `json:"5"`
+	Price     Float64String
+	Volume    Float64String
+	Time      UnixTime
+	Side      string
+	OrderType string
+	Misc      string
 }
 
 type Spread struct {
-	ChannelID   int64      `json:"0"`
-	Data        SpreadData `json:"1"`
-	ChannelName string     `json:"2"`
-	Pair        string     `json:"3"`
+	ChannelID   int64
+	Data        SpreadData
+	ChannelName string
+	Pair        string
 }
 
 type SpreadData struct {
-	Ask       Float64String `json:"0"`
-	Bid       Float64String `json:"1"`
-	Time      UnixTime      `json:"2"`
-	BidVolume Float64String `json:"3"`
-	AskVolume Float64String `json:"4"`
+	Ask       Float64String
+	Bid       Float64String
+	Time      UnixTime
+	BidVolume Float64String
+	AskVolume Float64String
 }
 
 type Book struct {
-	ChannelID   int64    `json:"0"`
-	Data        BookData `json:"1"`
-	ChannelName string   `json:"2"`
-	Pair        string   `json:"3"`
+	ChannelID   int64
+	Data        BookData
+	ChannelName string
+	Pair        string
 }
 
 type BookData struct {
@@ -236,10 +236,10 @@ type BookData struct {
 }
 
 type BookUpdate struct {
-	ChannelID   int64          `json:"0"`
-	Data        BookUpdateData `json:"1"`
-	ChannelName string         `json:"2"`
-	Pair        string         `json:"3"`
+	ChannelID   int64
+	Data        BookUpdateData
+	ChannelName string
+	Pair        string
 }
 
 type BookUpdateData struct {
@@ -248,9 +248,9 @@ type BookUpdateData struct {
 }
 
 type PriceLevel struct {
-	Price     Float64String `json:"0"`
-	Volume    Float64String `json:"1"`
-	Timestamp UnixTime      `json:"2"`
+	Price     Float64String
+	Volume    Float64String
+	Timestamp UnixTime
 }
 
 type Error struct {
