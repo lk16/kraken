@@ -330,3 +330,44 @@ type OpenOrderDescription struct {
 	Price2           Float64String `json:"price2"`
 	Type             string        `json:"type"`
 }
+
+type AddOrder struct {
+	Event            string `json:"event"`
+	Token            string `json:"token"`
+	ReqID            int64  `json:"reqid"`
+	OrderType        string `json:"ordertype"`
+	Type             string `json:"type"`
+	Pair             string `json:"pair"`
+	Price            string `json:"price"`
+	Price2           string `json:"price2"`
+	Volume           string `json:"volume"`
+	Leverage         string `json:"leverage"`
+	OFlags           string `json:"oflags"`
+	StartTime        string `json:"starttm"`
+	ExpireTime       string `json:"expiretm"`
+	UserReference    string `json:"userref"`
+	Validate         string `json:"validate"`
+	CloseOrderType   string `json:"close[ordertype]"`
+	ClosePrice       string `json:"close[price]"`
+	ClosePrice2      string `json:"close[price2]"`
+	TradingAgreement string `json:"trading_agreement"`
+}
+
+type CancelOrder struct {
+	Event         string   `json:"event"`
+	Token         string   `json:"token"`
+	ReqID         int      `json:"reqid"`
+	TransactionID []string `json:"txid"`
+}
+
+type CancelOrderStatus struct {
+	Event        string `json:"event"`
+	ReqID        int    `json:"reqid"`
+	Status       string `json:"status"`
+	ErrorMessage string `json:"errorMessage"`
+}
+
+type CancelAll struct {
+	Event string `json:"event"`
+	Token string `json:"token"`
+}

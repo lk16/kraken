@@ -167,8 +167,8 @@ func (client *Client) SendPrivate(rawMessage interface{}) error {
 
 func (client *Client) send(rawMessage interface{}, privatePublic string) error {
 
-	doSend := func(rawMessage interface{}) error {
-		bytes, err := json.Marshal(rawMessage)
+	doSend := func(message interface{}) error {
+		bytes, err := json.Marshal(message)
 		if err != nil {
 			return err
 		}
@@ -178,10 +178,9 @@ func (client *Client) send(rawMessage interface{}, privatePublic string) error {
 		}
 
 		if privatePublic == "public" {
-			return client.publicWs.WriteJSON(rawMessage)
+			return client.publicWs.WriteJSON(message)
 		}
-		err = client.privateWs.WriteJSON(rawMessage)
-		return err
+		return client.privateWs.WriteJSON(message)
 	}
 
 	switch message := rawMessage.(type) {
@@ -200,7 +199,24 @@ func (client *Client) send(rawMessage interface{}, privatePublic string) error {
 			message.Subscription.Token = client.privateToken
 		}
 		return doSend(message)
+	case AddOrder:
+		message.Event = "addOrder"
+		message.Token = client.privateToken
+		return doSend(message)
+	case CancelOrder:
+		message.Event = "cancelOrder"
+		message.Token = client.privateToken
+		return doSend(message)
+	case CancelAll:
+		message.Event = "cancelAll"
+		message.Token = client.privateToken
+		return doSend(message)
 	default:
 		return fmt.Errorf("unsupported message type %T", message)
 	}
+}
+
+func Round(number float64, decimals int) string {
+	format := fmt.Sprintf("%%.%df", decimals)
+	return fmt.Sprintf(format, number)
 }

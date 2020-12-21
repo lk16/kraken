@@ -313,6 +313,15 @@ func TestUnmarshalReceivedMessage(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name:  "cancelOrderStatus",
+			bytes: []byte(`{"event": "cancelOrderStatus","status": "ok"}`),
+			expectedModel: CancelOrderStatus{
+				Event:  "cancelOrderStatus",
+				Status: "ok",
+			},
+			expectedError: nil,
+		},
 	}
 
 	for _, testCase := range testCases {

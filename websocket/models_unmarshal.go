@@ -264,6 +264,7 @@ func unmarshalReceivedMessage(bytes []byte) (interface{}, error) {
 	}
 
 	targetMap := map[string]interface{}{
+		"cancelOrderStatus":  &CancelOrderStatus{},
 		"error":              &Error{},
 		"heartbeat":          &HeartBeat{},
 		"ohlc":               &OHLC{},
